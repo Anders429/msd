@@ -73,6 +73,17 @@ impl<R> Deserializer<R> {
     }
 }
 
+macro_rules! deserialize_impossible {
+    ($deserialize_fn:ident) => {
+        fn $deserialize_fn<V>(self, _visitor: V) -> Result<V::Value>
+        where
+            V: Visitor<'de>,
+        {
+            todo!()
+        }
+    }
+}
+
 macro_rules! deserialize_primitive {
     ($deserialize_fn:ident, $parse_fn:ident, $visit_fn:ident) => {
         fn $deserialize_fn<V>(self, visitor: V) -> Result<V::Value>
@@ -123,12 +134,8 @@ where
 {
     type Error = Error;
 
-    fn deserialize_any<V>(self, _visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        todo!()
-    }
+    deserialize_impossible!(deserialize_any);
+    deserialize_impossible!(deserialize_ignored_any);
 
     deserialize_primitive!(deserialize_bool, parse_bool, visit_bool);
     deserialize_primitive!(deserialize_i8, parse_i8, visit_i8);
@@ -320,13 +327,6 @@ where
         tag.assert_exhausted()?;
         self.tags.assert_exhausted()?;
         Ok(result)
-    }
-
-    fn deserialize_ignored_any<V>(self, _visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        todo!()
     }
 }
 
