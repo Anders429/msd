@@ -73,6 +73,50 @@ impl<R> Deserializer<R> {
     }
 }
 
+macro_rules! deserialize_primitive {
+    ($deserialize_fn:ident, $parse_fn:ident, $visit_fn:ident) => {
+        fn $deserialize_fn<V>(self, visitor: V) -> Result<V::Value>
+        where
+            V: Visitor<'de>,
+        {
+            let mut tag = self.tags.next()?;
+            let mut values = tag.next()?;
+            let value = values.next()?;
+            let parsed = value.$parse_fn()?;
+            let value_position = value.position();
+            values.assert_exhausted()?;
+            tag.assert_exhausted()?;
+            self.tags.assert_exhausted()?;
+            visitor.$visit_fn(parsed).map_err(|mut error: Error| {
+                error.set_position(value_position);
+                error
+            })
+        }
+    }
+}
+
+macro_rules! deserialize_borrowed_primitive {
+    ($deserialize_fn:ident, $parse_fn:ident, $visit_fn:ident) => {
+        fn $deserialize_fn<V>(self, visitor: V) -> Result<V::Value>
+        where
+            V: Visitor<'de>,
+        {
+            let mut tag = self.tags.next()?;
+            let mut values = tag.next()?;
+            let value = values.next()?;
+            let parsed = value.$parse_fn()?;
+            let value_position = value.position();
+            values.assert_exhausted()?;
+            tag.assert_exhausted()?;
+            self.tags.assert_exhausted()?;
+            visitor.$visit_fn(&parsed).map_err(|mut error: Error| {
+                error.set_position(value_position);
+                error
+            })
+        }
+    }
+}
+
 impl<'de, 'a, R> de::Deserializer<'de> for &'a mut Deserializer<R>
 where
     R: Read,
@@ -86,296 +130,25 @@ where
         todo!()
     }
 
-    fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        let mut tag = self.tags.next()?;
-        let mut values = tag.next()?;
-        let value = values.next()?;
-        let parsed = value.parse_bool()?;
-        let value_position = value.position();
-        values.assert_exhausted()?;
-        tag.assert_exhausted()?;
-        self.tags.assert_exhausted()?;
-        visitor.visit_bool(parsed).map_err(|mut error: Error| {
-            error.set_position(value_position);
-            error
-        })
-    }
-
-    fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        let mut tag = self.tags.next()?;
-        let mut values = tag.next()?;
-        let value = values.next()?;
-        let parsed = value.parse_i8()?;
-        let value_position = value.position();
-        values.assert_exhausted()?;
-        tag.assert_exhausted()?;
-        self.tags.assert_exhausted()?;
-        visitor.visit_i8(parsed).map_err(|mut error: Error| {
-            error.set_position(value_position);
-            error
-        })
-    }
-
-    fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        let mut tag = self.tags.next()?;
-        let mut values = tag.next()?;
-        let value = values.next()?;
-        let parsed = value.parse_i16()?;
-        let value_position = value.position();
-        values.assert_exhausted()?;
-        tag.assert_exhausted()?;
-        self.tags.assert_exhausted()?;
-        visitor.visit_i16(parsed).map_err(|mut error: Error| {
-            error.set_position(value_position);
-            error
-        })
-    }
-
-    fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        let mut tag = self.tags.next()?;
-        let mut values = tag.next()?;
-        let value = values.next()?;
-        let parsed = value.parse_i32()?;
-        let value_position = value.position();
-        values.assert_exhausted()?;
-        tag.assert_exhausted()?;
-        self.tags.assert_exhausted()?;
-        visitor.visit_i32(parsed).map_err(|mut error: Error| {
-            error.set_position(value_position);
-            error
-        })
-    }
-
-    fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        let mut tag = self.tags.next()?;
-        let mut values = tag.next()?;
-        let value = values.next()?;
-        let parsed = value.parse_i64()?;
-        let value_position = value.position();
-        values.assert_exhausted()?;
-        tag.assert_exhausted()?;
-        self.tags.assert_exhausted()?;
-        visitor.visit_i64(parsed).map_err(|mut error: Error| {
-            error.set_position(value_position);
-            error
-        })
-    }
-
+    deserialize_primitive!(deserialize_bool, parse_bool, visit_bool);
+    deserialize_primitive!(deserialize_i8, parse_i8, visit_i8);
+    deserialize_primitive!(deserialize_i16, parse_i16, visit_i16);
+    deserialize_primitive!(deserialize_i32, parse_i32, visit_i32);
+    deserialize_primitive!(deserialize_i64, parse_i64, visit_i64);
     #[cfg(has_i128)]
-    fn deserialize_i128<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        let mut tag = self.tags.next()?;
-        let mut values = tag.next()?;
-        let value = values.next()?;
-        let parsed = value.parse_i128()?;
-        let value_position = value.position();
-        values.assert_exhausted()?;
-        tag.assert_exhausted()?;
-        self.tags.assert_exhausted()?;
-        visitor.visit_i128(parsed).map_err(|mut error: Error| {
-            error.set_position(value_position);
-            error
-        })
-    }
-
-    fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        let mut tag = self.tags.next()?;
-        let mut values = tag.next()?;
-        let value = values.next()?;
-        let parsed = value.parse_u8()?;
-        let value_position = value.position();
-        values.assert_exhausted()?;
-        tag.assert_exhausted()?;
-        self.tags.assert_exhausted()?;
-        visitor.visit_u8(parsed).map_err(|mut error: Error| {
-            error.set_position(value_position);
-            error
-        })
-    }
-
-    fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        let mut tag = self.tags.next()?;
-        let mut values = tag.next()?;
-        let value = values.next()?;
-        let parsed = value.parse_u16()?;
-        let value_position = value.position();
-        values.assert_exhausted()?;
-        tag.assert_exhausted()?;
-        self.tags.assert_exhausted()?;
-        visitor.visit_u16(parsed).map_err(|mut error: Error| {
-            error.set_position(value_position);
-            error
-        })
-    }
-
-    fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        let mut tag = self.tags.next()?;
-        let mut values = tag.next()?;
-        let value = values.next()?;
-        let parsed = value.parse_u32()?;
-        let value_position = value.position();
-        values.assert_exhausted()?;
-        tag.assert_exhausted()?;
-        self.tags.assert_exhausted()?;
-        visitor.visit_u32(parsed).map_err(|mut error: Error| {
-            error.set_position(value_position);
-            error
-        })
-    }
-
-    fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        let mut tag = self.tags.next()?;
-        let mut values = tag.next()?;
-        let value = values.next()?;
-        let parsed = value.parse_u64()?;
-        let value_position = value.position();
-        values.assert_exhausted()?;
-        tag.assert_exhausted()?;
-        self.tags.assert_exhausted()?;
-        visitor.visit_u64(parsed).map_err(|mut error: Error| {
-            error.set_position(value_position);
-            error
-        })
-    }
-
+    deserialize_primitive!(deserialize_i128, parse_i128, visit_i128);
+    deserialize_primitive!(deserialize_u8, parse_u8, visit_u8);
+    deserialize_primitive!(deserialize_u16, parse_u16, visit_u16);
+    deserialize_primitive!(deserialize_u32, parse_u32, visit_u32);
+    deserialize_primitive!(deserialize_u64, parse_u64, visit_u64);
     #[cfg(has_i128)]
-    fn deserialize_u128<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        let mut tag = self.tags.next()?;
-        let mut values = tag.next()?;
-        let value = values.next()?;
-        let parsed = value.parse_u128()?;
-        let value_position = value.position();
-        values.assert_exhausted()?;
-        tag.assert_exhausted()?;
-        self.tags.assert_exhausted()?;
-        visitor.visit_u128(parsed).map_err(|mut error: Error| {
-            error.set_position(value_position);
-            error
-        })
-    }
-
-    fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        let mut tag = self.tags.next()?;
-        let mut values = tag.next()?;
-        let value = values.next()?;
-        let parsed = value.parse_f32()?;
-        let value_position = value.position();
-        values.assert_exhausted()?;
-        tag.assert_exhausted()?;
-        self.tags.assert_exhausted()?;
-        visitor.visit_f32(parsed).map_err(|mut error: Error| {
-            error.set_position(value_position);
-            error
-        })
-    }
-
-    fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        let mut tag = self.tags.next()?;
-        let mut values = tag.next()?;
-        let value = values.next()?;
-        let parsed = value.parse_f64()?;
-        let value_position = value.position();
-        values.assert_exhausted()?;
-        tag.assert_exhausted()?;
-        self.tags.assert_exhausted()?;
-        visitor.visit_f64(parsed).map_err(|mut error: Error| {
-            error.set_position(value_position);
-            error
-        })
-    }
-
-    fn deserialize_char<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        let mut tag = self.tags.next()?;
-        let mut values = tag.next()?;
-        let value = values.next()?;
-        let parsed = value.parse_char()?;
-        let value_position = value.position();
-        values.assert_exhausted()?;
-        tag.assert_exhausted()?;
-        self.tags.assert_exhausted()?;
-        visitor.visit_char(parsed).map_err(|mut error: Error| {
-            error.set_position(value_position);
-            error
-        })
-    }
-
-    fn deserialize_str<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        let mut tag = self.tags.next()?;
-        let mut values = tag.next()?;
-        let value = values.next()?;
-        // Parsed string must be owned, since it removes escaping and comments.
-        let parsed = value.parse_string()?;
-        let value_position = value.position();
-        values.assert_exhausted()?;
-        tag.assert_exhausted()?;
-        self.tags.assert_exhausted()?;
-        visitor.visit_str(&parsed).map_err(|mut error: Error| {
-            error.set_position(value_position);
-            error
-        })
-    }
-
-    fn deserialize_string<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        let mut tag = self.tags.next()?;
-        let mut values = tag.next()?;
-        let value = values.next()?;
-        let parsed = value.parse_string()?;
-        let value_position = value.position();
-        values.assert_exhausted()?;
-        tag.assert_exhausted()?;
-        self.tags.assert_exhausted()?;
-        visitor.visit_string(parsed).map_err(|mut error: Error| {
-            error.set_position(value_position);
-            error
-        })
-    }
+    deserialize_primitive!(deserialize_u128, parse_u128, visit_u128);
+    deserialize_primitive!(deserialize_f32, parse_f32, visit_f32);
+    deserialize_primitive!(deserialize_f64, parse_f64, visit_f64);
+    deserialize_primitive!(deserialize_char, parse_char, visit_char);
+    deserialize_borrowed_primitive!(deserialize_str, parse_string, visit_str);
+    deserialize_primitive!(deserialize_string, parse_string, visit_string);
+    deserialize_borrowed_primitive!(deserialize_identifier, parse_identifier, visit_str);
 
     fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value>
     where
@@ -547,25 +320,6 @@ where
         tag.assert_exhausted()?;
         self.tags.assert_exhausted()?;
         Ok(result)
-    }
-
-    fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        let mut tag = self.tags.next()?;
-        let mut values = tag.next()?;
-        let value = values.next()?;
-        // Parsed string must be owned, since it removes escaping and comments.
-        let parsed = value.parse_identifier()?;
-        let value_position = value.position();
-        values.assert_exhausted()?;
-        tag.assert_exhausted()?;
-        self.tags.assert_exhausted()?;
-        visitor.visit_str(&parsed).map_err(|mut error: Error| {
-            error.set_position(value_position);
-            error
-        })
     }
 
     fn deserialize_ignored_any<V>(self, _visitor: V) -> Result<V::Value>
